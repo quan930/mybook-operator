@@ -1,0 +1,9 @@
+domain: my.domain
+layout:
+- go.kubebuilder.io/v3
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: mybook-operator
+repo: github.com/quan930/mybook-operator
+version: "3"
