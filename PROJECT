@@ -1,4 +1,4 @@
-domain: my.domain
+domain: lilq.cn
 layout:
 - go.kubebuilder.io/v3
 plugins:
