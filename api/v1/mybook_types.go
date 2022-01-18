@@ -25,23 +25,32 @@ import (
 
 // MyBookSpec defines the desired state of MyBook
 type MyBookSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	//UUID book's UUID
+	//+kubebuilder:validation:len=36
+	UUID string `json:"uuid"`
 
-	// Foo is an example field of MyBook. Edit mybook_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	//Name book's Name
+	//+kubebuilder:validation:max=32
+	Name string `json:"name"`
+
+	//Price book's Price
+	//+kubebuilder:validation:Minimum=0
+	Price int `json:"price"`
 }
 
 // MyBookStatus defines the observed state of MyBook
 type MyBookStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Nodes are the names of the memcached pods
+	Nodes []string `json:"nodes"`
+
+	//History update history
+	History []MyBookSpec`json:"history"`
 }
 
 //+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
 
 // MyBook is the Schema for the mybooks API
+//+kubebuilder:subresource:status
 type MyBook struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
