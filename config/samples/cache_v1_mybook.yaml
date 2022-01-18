@@ -1,0 +1,6 @@
+apiVersion: cache.lilq.cn/v1
+kind: MyBook
+metadata:
+  name: mybook-sample
+spec:
+  # Add fields here

@@ -6,4 +6,14 @@ plugins:
   scorecard.sdk.operatorframework.io/v2: {}
 projectName: mybook-operator
 repo: github.com/quan930/mybook-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: lilq.cn
+  group: cache
+  kind: MyBook
+  path: github.com/quan930/mybook-operator/api/v1
+  version: v1
 version: "3"
