@@ -18,13 +18,14 @@ package controllers
 
 import (
 	"context"
+	v1 "k8s.io/api/apps/v1"
+	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
+	cachev1 "github.com/quan930/mybook-operator/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	cachev1 "github.com/quan930/mybook-operator/api/v1"
 )
 
 // MyBookReconciler reconciles a MyBook object
@@ -45,18 +46,25 @@ type MyBookReconciler struct {
 // the user.
 //
 // For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.10.0/pkg/reconcile
+//+kubebuilder:rbac:groups=cache.lilq.cn,resources=mybook,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=cache.lilq.cn,resources=mybook/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;
 func (r *MyBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
-
-	// your logic here
-
+	mybook := &cachev1.MyBook{}
+	err := r.Get(ctx, req.NamespacedName, mybook)
+	klog.Info(err)
 	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *MyBookReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	//控制器监视的资源
 	return ctrl.NewControllerManagedBy(mgr).
+		//将 MyBook 类型指定为要监视的主要资源
 		For(&cachev1.MyBook{}).
+		//将 Deployments 类型指定为要监视的辅助资源。对于每个部署类型的添加/更新/删除事件，事件处理程序会将每个事件映射到Request部署所有者的协调
+		Owns(&v1.Deployment{}).
+		WithOptions(controller.Options{MaxConcurrentReconciles: 1}).
 		Complete(r)
 }

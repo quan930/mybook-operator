@@ -44,7 +44,7 @@ type MyBookStatus struct {
 	Nodes []string `json:"nodes"`
 
 	//History update history
-	History []MyBookSpec`json:"history"`
+	History []MyBookSpec `json:"history"`
 }
 
 //+kubebuilder:object:root=true
