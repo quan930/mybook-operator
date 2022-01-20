@@ -40,9 +40,6 @@ type MyBookSpec struct {
 
 // MyBookStatus defines the observed state of MyBook
 type MyBookStatus struct {
-	// Nodes are the names of the memcached pods
-	Nodes []string `json:"nodes"`
-
 	//History update history
 	History []MyBookSpec `json:"history"`
 }

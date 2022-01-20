@@ -18,8 +18,12 @@ package controllers
 
 import (
 	"context"
+	"fmt"
+	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog/v2"
+	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	cachev1 "github.com/quan930/mybook-operator/api/v1"
@@ -30,6 +34,7 @@ import (
 
 // MyBookReconciler reconciles a MyBook object
 type MyBookReconciler struct {
+	Log logr.Logger
 	client.Client
 	Scheme *runtime.Scheme
 }
@@ -51,9 +56,35 @@ type MyBookReconciler struct {
 //+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;
 func (r *MyBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	klog.Info("hello world!!!!")
+	// 获取 MyBook 实例
 	mybook := &cachev1.MyBook{}
+	ctx = context.Background()
+	klog.Info("hello", "world2")
 	err := r.Get(ctx, req.NamespacedName, mybook)
-	klog.Info(err)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// 对象未找到
+			klog.Info("MyBook resource not found. Ignoring since object must be deleted")
+			return ctrl.Result{}, nil
+		}
+		// Error reading the object - requeue the request.
+		klog.Error(err, "Failed to get MyBook")
+		return ctrl.Result{}, err
+	}
+
+	klog.Info("MyBook:", mybook)
+	// Update status.Nodes if needed
+	if contains(mybook.Status.History, mybook.Spec) {
+		return ctrl.Result{}, nil
+	}
+
+	mybook.Status.History = append(mybook.Status.History, mybook.Spec)
+	err = r.Status().Update(ctx, mybook)
+	if err != nil {
+		klog.Error(err, "Failed to update Memcached status")
+		return ctrl.Result{}, err
+	}
 	return ctrl.Result{}, nil
 }
 
@@ -67,4 +98,20 @@ func (r *MyBookReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&v1.Deployment{}).
 		WithOptions(controller.Options{MaxConcurrentReconciles: 1}).
 		Complete(r)
+}
+
+func contains(array interface{}, val interface{}) bool {
+	switch reflect.TypeOf(array).Kind() {
+	case reflect.Slice:
+		{
+			s := reflect.ValueOf(array)
+			for i := 0; i < s.Len(); i++ {
+				if reflect.DeepEqual(val, s.Index(i).Interface()) {
+					fmt.Println("in")
+					return true
+				}
+			}
+		}
+	}
+	return false
 }

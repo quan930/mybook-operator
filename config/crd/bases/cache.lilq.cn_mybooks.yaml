@@ -75,14 +75,8 @@ spec:
                   - uuid
                   type: object
                 type: array
-              nodes:
-                description: Nodes are the names of the memcached pods
-                items:
-                  type: string
-                type: array
             required:
             - history
-            - nodes
             type: object
         type: object
     served: true

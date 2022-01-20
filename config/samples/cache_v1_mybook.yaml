@@ -3,4 +3,6 @@ kind: MyBook
 metadata:
   name: mybook-sample
 spec:
-  # Add fields here
+  name: "kubernetes in action"
+  uuid: "5625367e-705e-46aa-ba48-1194e66b1ac4"
+  price: 200
