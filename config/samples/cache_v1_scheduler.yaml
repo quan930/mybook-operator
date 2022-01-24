@@ -1,0 +1,6 @@
+apiVersion: cache.lilq.cn/v1
+kind: Scheduler
+metadata:
+  name: scheduler-sample
+spec:
+  # Add fields here

@@ -32,3 +32,29 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - cache.lilq.cn
+  resources:
+  - schedulers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cache.lilq.cn
+  resources:
+  - schedulers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - cache.lilq.cn
+  resources:
+  - schedulers/status
+  verbs:
+  - get
+  - patch
+  - update
