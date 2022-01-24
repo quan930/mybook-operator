@@ -18,10 +18,12 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
+	v12 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -56,11 +58,12 @@ type MyBookReconciler struct {
 //+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;
 func (r *MyBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	klog.Info("hello world!!!!")
+	klog.Info("========== start ===============>")
 	// 获取 MyBook 实例
 	mybook := &cachev1.MyBook{}
 	ctx = context.Background()
 	klog.Info("hello", "world2")
+
 	err := r.Get(ctx, req.NamespacedName, mybook)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -72,8 +75,29 @@ func (r *MyBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		klog.Error(err, "Failed to get MyBook")
 		return ctrl.Result{}, err
 	}
-
 	klog.Info("MyBook:", mybook)
+
+	klog.Info("deployment ........ init =>")
+	found := &v1.Deployment{}
+	err = r.Get(ctx, types.NamespacedName{Name: "mybook-operator-mybook-server", Namespace: "mybook-operator-system"}, found)
+	if err != nil && errors.IsNotFound(err) {
+		// Define a new deployment
+		dep := r.deploymentForMyBook(mybook)
+
+		klog.Info("Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+		err = r.Create(ctx, dep)
+		if err != nil {
+			klog.Error(err, "Failed to create new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+			return ctrl.Result{}, err
+		}
+		// Deployment created successfully - return and requeue
+		return ctrl.Result{Requeue: true}, nil
+	} else if err != nil {
+		klog.Error(err, "Failed to get Deployment")
+		return ctrl.Result{}, err
+	}
+	klog.Info("deployment ........ finish =>")
+
 	// Update status.Nodes if needed
 	if contains(mybook.Status.History, mybook.Spec) {
 		return ctrl.Result{}, nil
@@ -107,11 +131,52 @@ func contains(array interface{}, val interface{}) bool {
 			s := reflect.ValueOf(array)
 			for i := 0; i < s.Len(); i++ {
 				if reflect.DeepEqual(val, s.Index(i).Interface()) {
-					fmt.Println("in")
 					return true
 				}
 			}
 		}
 	}
 	return false
+}
+
+//deploymentForMyBook 部署服务
+func (r *MyBookReconciler) deploymentForMyBook(m *cachev1.MyBook) *v1.Deployment {
+	ls := labelsForMyBook(m.Name)
+	replicas := int32(2)
+
+	dep := &v1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "mybook-operator-mybook-server",
+			Namespace: "mybook-operator-system",
+		},
+		Spec: v1.DeploymentSpec{
+			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: ls,
+			},
+			Template: v12.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: ls,
+				},
+				Spec: v12.PodSpec{
+					Containers: []v12.Container{{
+						Image: "gcr.io/google-samples/node-hello:1.0",
+						Name:  "book-server",
+						//Command: []string{"memcached", "-m=64", "-o", "modern", "-v"},
+						Ports: []v12.ContainerPort{{
+							ContainerPort: 8080,
+							Name:          "nginx",
+						}},
+					}},
+				},
+			},
+		},
+	}
+	// Set Memcached instance as the owner and controller
+	ctrl.SetControllerReference(m, dep, r.Scheme)
+	return dep
+}
+
+func labelsForMyBook(name string) map[string]string {
+	return map[string]string{"app": "mybook", "mybook_cr": name}
 }
